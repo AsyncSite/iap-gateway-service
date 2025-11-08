@@ -921,8 +921,8 @@ Problem definition → small, safe change → change review → refactor — rep
 
 ## 13. 현재 구현 상태 (2025.11.09)
 
-### ✅ Phase 1 완료 (Day 1-4)
-- ✅ 프로젝트 초기 설정 (Spring Boot 3.5.3, Java 21, Gradle 8.12)
+### ✅ Phase 1 완료 (Day 1-5) 🎉
+- ✅ 프로젝트 초기 설정 (Spring Boot 3.5.3, Java 21, Gradle 8.10.2)
 - ✅ Gradle 빌드 스크립트 (core-platform:common 의존성 포함)
 - ✅ Docker 설정 (docker-compose, Dockerfile, gradle tasks)
 - ✅ Flyway 마이그레이션 스크립트 (V1__create_iap_intents_table.sql)
@@ -936,9 +936,12 @@ Problem definition → small, safe change → change review → refactor — rep
   - Domain Model 테스트 (IAPIntent, Value Objects)
   - Service 테스트 (IAPIntentService)
   - Controller 통합 테스트 (IAPIntentController)
-
-### 📋 Phase 1 남은 작업
-- ⏳ Day 5: Redis 캐싱 적용 (선택적, 성능 최적화)
+- ✅ **Redis 캐싱 적용** (Day 5 완료)
+  - RedisTemplate with JavaTimeModule (java.time.Instant 직렬화 지원)
+  - createIntent: Intent 생성 시 자동 캐싱 (10분 TTL)
+  - getIntent: Cache Hit/Miss 로직 구현
+  - 만료된 캐시 자동 삭제
+  - Redis 정상 작동 확인 (키 저장, TTL 확인 완료)
 
 ### 🚧 Phase 2-6 예정
 - Phase 2: QueryDaily Mobile Service 연동
