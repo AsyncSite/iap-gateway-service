@@ -1,0 +1,73 @@
+services:
+  # Kafka Topic Initializer for iap-gateway-service
+  kafka-init:
+    image: apache/kafka:3.8.0
+    container_name: asyncsite-iap-gateway-kafka-init
+    entrypoint: ["/bin/bash", "-c"]
+    command: |
+      "
+      echo 'Waiting for Kafka to be ready...'
+      until /opt/kafka/bin/kafka-topics.sh --bootstrap-server asyncsite-kafka:9092 --list 2>/dev/null; do
+        echo 'Kafka not ready yet...'
+        sleep 2
+      done
+
+      echo 'Creating iap-gateway-service topics if they do not exist...'
+
+      # IAP Purchase Verified topic
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server asyncsite-kafka:9092 --create --if-not-exists --topic asyncsite.iap.purchase.verified --partitions 3 --replication-factor 1 --config retention.ms=604800000 --config min.insync.replicas=1 || true
+
+      # IAP Purchase Failed topic
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server asyncsite-kafka:9092 --create --if-not-exists --topic asyncsite.iap.purchase.failed --partitions 3 --replication-factor 1 --config retention.ms=604800000 --config min.insync.replicas=1 || true
+
+      # IAP Refund Processed topic
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server asyncsite-kafka:9092 --create --if-not-exists --topic asyncsite.iap.refund.processed --partitions 3 --replication-factor 1 --config retention.ms=604800000 --config min.insync.replicas=1 || true
+
+      echo 'Topics created successfully!'
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server asyncsite-kafka:9092 --list
+      "
+    networks:
+      - asyncsite-network
+    labels:
+      - "com.asyncsite.service=kafka-init"
+      - "com.asyncsite.tier=infrastructure"
+      - "com.asyncsite.type=init"
+
+  iap-gateway-service:
+    container_name: asyncsite-iap-gateway-service
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: asyncsite/iap-gateway-service:latest
+    ports:
+      - "8089:8089"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://asyncsite-eureka:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://asyncsite-mysql:3306/iap_gateway_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=utf8&useUnicode=true&createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=asyncsite_root_2024!
+      - SPRING_DATA_REDIS_HOST=asyncsite-redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=asyncsite-kafka:9092
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/config/google-credentials.json
+      - GOOGLE_IAP_PACKAGE_NAME=com.asyncsite.app
+      - APPLE_IAP_SHARED_SECRET=${APPLE_IAP_SHARED_SECRET:-your-shared-secret}
+      - APPLE_IAP_BUNDLE_ID=com.asyncsite.app
+    volumes:
+      - ./logs:/app/logs
+      - ./config:/app/config
+    networks:
+      - asyncsite-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8089/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+
+networks:
+  asyncsite-network:
+    external: true
