@@ -21,6 +21,7 @@ configurations {
 
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
 ext {
@@ -28,6 +29,9 @@ ext {
 }
 
 dependencies {
+    // Core Platform
+    implementation("com.asyncsite.coreplatform:common:1.1.0-SNAPSHOT")
+
     // Spring Boot
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")

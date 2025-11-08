@@ -383,6 +383,52 @@ public ApiResponse<Void> deleteIntent(@PathVariable String intentId) {
 - **ResponseEntity 사용 금지**: 모든 Controller에서 `ResponseEntity` 래퍼 사용 금지
 - **HTTP 상태 코드**: `@ResponseStatus` 어노테이션으로 설정 (200 OK는 기본값이므로 생략)
 
+### ⭐ GlobalExceptionHandler 응답 규칙 (필수 준수)
+
+**모든 예외 핸들러는 `@ResponseStatus` + `ApiResponse.error()` 패턴을 사용해야 합니다:**
+
+```java
+@RestControllerAdvice
+@Slf4j
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(IntentNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ApiResponse<Void> handleIntentNotFound(IntentNotFoundException ex) {
+        log.warn("Intent not found: {}", ex.getMessage());
+        return ApiResponse.error("INTENT_NOT_FOUND", ex.getMessage(), null);
+    }
+
+    @ExceptionHandler(IntentExpiredException.class)
+    @ResponseStatus(HttpStatus.GONE)
+    public ApiResponse<Void> handleIntentExpired(IntentExpiredException ex) {
+        log.warn("Intent expired: {}", ex.getMessage());
+        return ApiResponse.error("INTENT_EXPIRED", ex.getMessage(), null);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponse<Void> handleValidationException(MethodArgumentNotValidException ex) {
+        String errorMessage = ex.getBindingResult().getFieldErrors()
+            .stream()
+            .map(this::formatFieldError)
+            .collect(Collectors.joining(", "));
+        log.warn("Validation failed: {}", errorMessage);
+        return ApiResponse.error("VALIDATION_FAILED", errorMessage, null);
+    }
+
+    private String formatFieldError(FieldError error) {
+        return error.getField() + ": " + error.getDefaultMessage();
+    }
+}
+```
+
+#### 핵심 원칙
+- **절대 ResponseEntity로 감싸지 말 것**: ApiResponse가 이미 ResponseEntity를 내부에 포함
+- **@ResponseStatus 어노테이션 필수**: HTTP 상태 코드 설정
+- **ApiResponse.error() 사용**: 세 번째 파라미터 `details`는 null 또는 Map
+- **일관된 에러 코드**: UPPER_SNAKE_CASE 형식 사용
+
 ### 엔드포인트 패턴
 ```
 # IAP 영수증 검증
@@ -873,24 +919,33 @@ Problem definition → small, safe change → change review → refactor — rep
 
 ---
 
-## 13. 현재 구현 상태 (2025.11)
+## 13. 현재 구현 상태 (2025.11.09)
 
-### ✅ 구현 완료
-- 프로젝트 초기 설정
-- Gradle 빌드 스크립트
-- Docker 설정
-- Flyway 마이그레이션 스크립트
+### ✅ Phase 1 완료 (Day 1-4)
+- ✅ 프로젝트 초기 설정 (Spring Boot 3.5.3, Java 21, Gradle 8.12)
+- ✅ Gradle 빌드 스크립트 (core-platform:common 의존성 포함)
+- ✅ Docker 설정 (docker-compose, Dockerfile, gradle tasks)
+- ✅ Flyway 마이그레이션 스크립트 (V1__create_iap_intents_table.sql)
+- ✅ **Domain Model 구현** (IAPIntent, Value Objects, Enums)
+- ✅ **Persistence Layer 구현** (JPA, Mapper, Repository Port/Adapter)
+- ✅ **Application Service 구현** (Use Cases, IAPIntentService)
+- ✅ **Internal API 구현** (IAPIntentController, DTOs)
+- ✅ **ApiResponse 통합** (core-platform:common)
+- ✅ **GlobalExceptionHandler** (@ResponseStatus + ApiResponse.error 패턴)
+- ✅ **단위 테스트** (46개 테스트, 100% 통과)
+  - Domain Model 테스트 (IAPIntent, Value Objects)
+  - Service 테스트 (IAPIntentService)
+  - Controller 통합 테스트 (IAPIntentController)
 
-### 🚧 진행 중
-- IAP 검증 로직 구현
-- Google/Apple API 연동
-- Kafka 이벤트 발행
+### 📋 Phase 1 남은 작업
+- ⏳ Day 5: Redis 캐싱 적용 (선택적, 성능 최적화)
 
-### 📋 예정
-- 영수증 캐싱 (Redis)
-- 구매 이력 조회 API
-- 환불 처리 로직
-- Rate Limiting
+### 🚧 Phase 2-6 예정
+- Phase 2: QueryDaily Mobile Service 연동
+- Phase 3: Payment Core 연동
+- Phase 4: Google Play Server Notification 수신
+- Phase 5: Apple App Store Server Notification 수신
+- Phase 6: 중복 방지 및 보안 강화
 
 ---
 
