@@ -36,7 +36,7 @@ logging:
     com.asyncsite.tracing.logtrace.SafeJsonLogger: TRACE
     com.asyncsite.tracing.interceptor.GlobalTraceHandler: DEBUG
   pattern:
-    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{HH:mm:ss.SSS} [%X{correlationId:-}] [%thread] %-5level %logger{36} - %msg%n"
 
 management:
   endpoints:
