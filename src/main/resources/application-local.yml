@@ -3,6 +3,7 @@
 
 eureka:
   client:
+    enabled: false  # 로컬 개발 시 Eureka 비활성화
     service-url:
       defaultZone: http://localhost:8761/eureka/
 
