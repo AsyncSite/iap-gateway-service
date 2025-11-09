@@ -1,0 +1,62 @@
+spring:
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:asyncsite-mysql}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:iap_gateway_db}?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:asyncsite_root_2024!}
+
+  jpa:
+    show-sql: false  # Production에서는 SQL 로깅 비활성화
+    properties:
+      hibernate:
+        format_sql: false
+
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:asyncsite-redis}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:asyncsite-kafka:9092}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://asyncsite-eureka:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+    hostname: asyncsite-iap-gateway-service
+
+feign:
+  client:
+    config:
+      payment-core:
+        url: ${PAYMENT_CORE_URL:http://asyncsite-payment-core:6082}
+
+# Payment Core Service URL
+payment-core:
+  url: ${PAYMENT_CORE_URL:http://asyncsite-payment-core:6082}
+
+asyncsite:
+  tracing:
+    enabled: true
+    http-enabled: true
+    kafka-enabled: false  # Production에서는 Kafka 추적 비활성화 (성능)
+    log-request-response: false  # Production에서는 요청/응답 로깅 비활성화
+
+logging:
+  level:
+    root: INFO
+    com.asyncsite.iap.gateway: INFO  # Production은 INFO 레벨
+    com.asyncsite.tracing.logtrace.SafeJsonLogger: INFO
+    com.asyncsite.tracing.interceptor.GlobalTraceHandler: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%X{correlationId:-}] [%thread] %-5level %logger{36} - %msg%n"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized  # Production에서는 인증된 요청만 상세 정보 노출

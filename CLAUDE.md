@@ -69,6 +69,154 @@ SELECT * FROM iap_transactions LIMIT 10;
 
 ---
 
+## 🌍 환경 프로필 (Environment Profiles)
+
+### 프로필 구조
+
+IAP Gateway Service는 3가지 환경 프로필을 지원합니다:
+
+```
+src/main/resources/
+├── application.yml              # 공통 설정 + 환경변수 기본값 (localhost)
+├── application-local.yml        # 로컬 개발 환경 (DEBUG 로깅)
+├── application-docker.yml       # Docker Compose 환경
+└── application-prod.yml         # 프로덕션 환경 (INFO 로깅, 최적화)
+```
+
+### 프로필별 특징
+
+| 프로필 | 용도 | 호스트 | 로깅 레벨 | SQL 로깅 | 추적 |
+|-------|------|-------|---------|---------|------|
+| **local** | 로컬 개발 | localhost | DEBUG | O | 전체 활성화 |
+| **docker** | Docker Compose 로컬 테스트 | asyncsite-* | DEBUG | O | 전체 활성화 |
+| **prod** | 프로덕션 배포 | 환경변수 | INFO | X | HTTP만 |
+
+### 1️⃣ 로컬 개발 환경 (local)
+
+**기본 프로필 - 별도 설정 불필요**
+
+```bash
+# 방법 1: 기본값 사용 (권장)
+./gradlew bootRun
+
+# 방법 2: 명시적 지정
+./gradlew bootRun --args='--spring.profiles.active=local'
+
+# 방법 3: 환경변수
+export SPRING_PROFILES_ACTIVE=local
+./gradlew bootRun
+```
+
+**설정 값:**
+- MySQL: `localhost:3306`
+- Redis: `localhost:6379`
+- Kafka: `localhost:9092`
+- Eureka: `localhost:8761`
+- 로깅: DEBUG 레벨
+
+### 2️⃣ Docker Compose 환경 (docker)
+
+**Docker Compose로 로컬에서 전체 인프라 테스트**
+
+```bash
+# docker-compose.yml에 환경변수 설정
+environment:
+  SPRING_PROFILES_ACTIVE: docker
+
+# 또는 Gradle task 사용
+./gradlew dockerRebuildAndRunIAPOnly
+```
+
+**설정 값:**
+- MySQL: `asyncsite-mysql:3306`
+- Redis: `asyncsite-redis:6379`
+- Kafka: `asyncsite-kafka:9092`
+- Eureka: `asyncsite-eureka:8761`
+- 로깅: DEBUG 레벨 (로컬 테스트용)
+
+### 3️⃣ 프로덕션 환경 (prod)
+
+**GCP/AWS 등 실제 운영 환경**
+
+```bash
+# 환경변수로 모든 설정 주입
+export SPRING_PROFILES_ACTIVE=prod
+export MYSQL_HOST=production-mysql.example.com
+export MYSQL_PORT=3306
+export MYSQL_DATABASE=iap_gateway_db
+export MYSQL_USERNAME=iap_user
+export MYSQL_PASSWORD=secure_password
+
+export SPRING_DATA_REDIS_HOST=production-redis.example.com
+export SPRING_DATA_REDIS_PORT=6379
+
+export KAFKA_BOOTSTRAP_SERVERS=production-kafka:9092
+export EUREKA_URL=http://production-eureka:8761/eureka/
+export PAYMENT_CORE_URL=http://production-payment-core:6082
+
+./gradlew bootRun
+```
+
+**최적화 설정:**
+- SQL 로깅 비활성화 (성능)
+- Kafka 추적 비활성화 (성능)
+- 요청/응답 로깅 비활성화 (보안)
+- INFO 레벨 로깅
+- Health endpoint 상세 정보는 인증된 요청만 노출
+
+### 환경변수 전체 목록
+
+| 환경변수 | 기본값 | 설명 |
+|---------|-------|------|
+| `SPRING_PROFILES_ACTIVE` | `local` | 활성 프로필 |
+| `MYSQL_HOST` | `localhost` | MySQL 호스트 |
+| `MYSQL_PORT` | `3306` | MySQL 포트 |
+| `MYSQL_DATABASE` | `iap_gateway_db` | 데이터베이스명 |
+| `MYSQL_USERNAME` | `root` | MySQL 사용자 |
+| `MYSQL_PASSWORD` | `asyncsite_root_2024!` | MySQL 비밀번호 |
+| `SPRING_DATA_REDIS_HOST` | `localhost` | Redis 호스트 |
+| `SPRING_DATA_REDIS_PORT` | `6379` | Redis 포트 |
+| `KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Kafka 서버 |
+| `EUREKA_URL` | `http://localhost:8761/eureka/` | Eureka 서버 |
+| `PAYMENT_CORE_URL` | `http://localhost:6082` | Payment Core 서비스 URL |
+| `JPA_HIBERNATE_DDL_AUTO` | `validate` | Hibernate DDL 모드 |
+| `JPA_SHOW_SQL` | `true` | SQL 로깅 여부 |
+| `FLYWAY_ENABLED` | `true` | Flyway 활성화 |
+| `LOG_LEVEL_IAP_GATEWAY` | `DEBUG` | IAP Gateway 로그 레벨 |
+
+### 프로필 전환 예시
+
+```bash
+# 로컬 개발 → Docker 테스트
+export SPRING_PROFILES_ACTIVE=docker
+./gradlew bootRun
+
+# Docker → 프로덕션
+export SPRING_PROFILES_ACTIVE=prod
+export MYSQL_HOST=production-mysql
+# ... 기타 환경변수 설정
+./gradlew bootRun
+
+# 프로덕션 → 로컬
+unset SPRING_PROFILES_ACTIVE  # 기본값 local 사용
+./gradlew bootRun
+```
+
+### ⚠️ 주의사항
+
+1. **프로덕션 환경에서는 반드시 환경변수로 설정 주입**
+   - 설정 파일에 실제 비밀번호 하드코딩 금지
+   - Kubernetes Secret, AWS Parameter Store 등 활용
+
+2. **local/docker 프로필은 개발/테스트 전용**
+   - 실제 운영 환경에서 사용 금지
+
+3. **프로필 파일 우선순위**
+   - `application-{profile}.yml` > `application.yml`
+   - 동일한 속성은 프로필 파일이 우선
+
+---
+
 ## 리팩토링 가이드
 
 ### 1️⃣ 단위 테스트

@@ -1,13 +1,15 @@
-spring:
-  datasource:
-    url: jdbc:mysql://asyncsite-mysql:3306/iap_gateway_db?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+# Docker Compose 환경 설정
 
+spring:
   data:
     redis:
       host: asyncsite-redis
 
   kafka:
     bootstrap-servers: asyncsite-kafka:9092
+
+  datasource:
+    url: jdbc:mysql://asyncsite-mysql:3306/iap_gateway_db?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
 
 eureka:
   client:
@@ -23,3 +25,8 @@ feign:
 # Payment Core Service URL
 payment-core:
   url: http://asyncsite-payment-core:6082
+
+logging:
+  level:
+    root: INFO
+    com.asyncsite.iap.gateway: DEBUG  # Docker 환경도 DEBUG (로컬 테스트용)
