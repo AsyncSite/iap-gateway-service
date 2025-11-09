@@ -49,6 +49,13 @@ public class GooglePlayNotificationHandler {
             return;
         }
 
+        // 1-1. 중복 알림 검증 (이미 VERIFIED 상태인지 확인)
+        if (intent.getStatus() == IAPIntentStatus.VERIFIED) {
+            log.info("[GOOGLE PLAY] Intent already verified: intentId={}, status=VERIFIED, skipping duplicate notification",
+                intent.getIntentId().getValue());
+            return;
+        }
+
         log.info("[GOOGLE PLAY] Found pending intent: intentId={}, userEmail={}",
             intent.getIntentId().getValue(), intent.getUserEmail().getValue());
 
@@ -94,6 +101,27 @@ public class GooglePlayNotificationHandler {
 
     /**
      * PENDING 상태의 Intent 조회
+     *
+     * ⚠️ CRITICAL TODO (Phase 4.5 또는 Phase 6):
+     * 현재 구현은 productId로만 검색하여 다른 사용자의 구매와 매칭될 위험이 있음!
+     *
+     * Google Play RTDN의 한계:
+     * - RTDN 메시지에는 appAccountToken이 포함되지 않음
+     * - purchaseToken만 제공됨
+     *
+     * 해결 방안 (다음 중 하나 선택):
+     * 1. Payment Core에서 Google Play API 호출 시 obfuscatedExternalAccountId 추출
+     *    → IAPVerificationResponse에 appAccountToken 포함
+     *    → appAccountToken으로 Intent 재조회
+     *
+     * 2. Intent 생성 시 purchaseToken 예측값을 DB에 저장
+     *    → RTDN에서 purchaseToken으로 Intent 검색
+     *
+     * 3. Intent 테이블에 productId + createdAt 복합 인덱스 추가
+     *    → 최근 30초 이내 생성된 Intent만 검색 (타임윈도우 매칭)
+     *
+     * 현재는 단일 사용자 테스트 환경이므로 productId 검색으로 충분하나,
+     * 프로덕션 환경에서는 반드시 수정 필요!
      */
     private IAPIntent findPendingIntent(String productId) {
         return intentRepository.findTopByProductIdAndStatusOrderByCreatedAtDesc(
@@ -110,7 +138,7 @@ public class GooglePlayNotificationHandler {
             "intentId", intent.getIntentId().getValue(),
             "userEmail", intent.getUserEmail().getValue(),
             "productId", intent.getProductId().getValue(),
-            "platform", "ANDROID",
+            "platform", Platform.ANDROID.name(),  // Use enum for consistency
             "transactionId", verification.getPlatformTransactionId(),
             "insightAmount", verification.getInsightAmount(),
             "verifiedAt", verification.getVerifiedAt()

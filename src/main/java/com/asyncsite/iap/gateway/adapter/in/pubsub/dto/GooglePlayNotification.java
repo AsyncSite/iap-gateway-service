@@ -23,7 +23,7 @@ public class GooglePlayNotification {
     private String packageName;
 
     @JsonProperty("eventTimeMillis")
-    private Long eventTimeMillis;  // milliseconds since epoch
+    private String eventTimeMillis;  // Google sends as String, not Long
 
     @JsonProperty("oneTimeProductNotification")
     private OneTimeProductNotification oneTimeProductNotification;
