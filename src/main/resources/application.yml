@@ -84,6 +84,14 @@ feign:
 payment-core:
   url: ${PAYMENT_CORE_URL:http://localhost:6082}
 
+# Google Cloud Pub/Sub
+google:
+  pubsub:
+    project-id: ${GOOGLE_CLOUD_PROJECT_ID:querydaily-iap-local}
+    subscription-id: ${GOOGLE_PUBSUB_SUBSCRIPTION:iap-gateway-rtdn-sub}
+    credentials-path: ${GOOGLE_APPLICATION_CREDENTIALS:/secrets/iap-gateway-pubsub-key.json}
+    enabled: ${PUBSUB_ENABLED:false}  # 로컬 개발 시 false
+
 # AsyncSite Tracing
 asyncsite:
   tracing:

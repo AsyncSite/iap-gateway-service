@@ -74,6 +74,10 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
+    // Google Cloud Pub/Sub
+    implementation("com.google.cloud:google-cloud-pubsub:1.125.11")
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.15.0")
+
     // Springdoc OpenAPI
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
 
