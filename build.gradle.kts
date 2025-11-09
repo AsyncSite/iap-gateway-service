@@ -78,6 +78,13 @@ dependencies {
     implementation("com.google.cloud:google-cloud-pubsub:1.125.11")
     implementation("com.google.auth:google-auth-library-oauth2-http:1.15.0")
 
+    // JWT (Apple App Store Server Notifications V2)
+    implementation("com.auth0:java-jwt:4.4.0")
+    implementation("com.nimbusds:nimbus-jose-jwt:9.37.3")
+
+    // WebFlux (HTTP Client for Apple public key download)
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+
     // Springdoc OpenAPI
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
 

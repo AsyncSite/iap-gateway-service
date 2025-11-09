@@ -39,6 +39,9 @@ public class SecurityConfig {
                 // QueryDaily Mobile Service에서 호출
                 .requestMatchers("/internal/**").permitAll()
 
+                // Webhooks - 외부 플랫폼에서 호출 (Apple, Google)
+                .requestMatchers("/api/v1/iap/webhooks/**").permitAll()
+
                 // 나머지 모든 요청 - 인증 필요 (향후 Gateway 헤더 인증)
                 .anyRequest().permitAll()  // 현재는 모두 허용 (Phase 1)
             )
