@@ -20,8 +20,18 @@ configurations {
 }
 
 repositories {
-    mavenCentral()
     mavenLocal()
+    mavenCentral()
+
+    // GitHub Packages - common-tracer
+    maven {
+        name = "GitHubPackages-common-tracer"
+        url = uri("https://maven.pkg.github.com/asyncsite/common-tracer")
+        credentials {
+            username = findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR") ?: System.getenv("USERNAME")
+            password = findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN") ?: System.getenv("TOKEN")
+        }
+    }
 }
 
 ext {
@@ -31,6 +41,9 @@ ext {
 dependencies {
     // Core Platform
     implementation("com.asyncsite.coreplatform:common:1.1.0-SNAPSHOT")
+
+    // Tracing
+    implementation("com.asyncsite:common-tracer:0.1.0-SNAPSHOT")
 
     // Spring Boot
     implementation("org.springframework.boot:spring-boot-starter-web")

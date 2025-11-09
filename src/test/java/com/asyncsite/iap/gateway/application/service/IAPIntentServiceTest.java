@@ -9,12 +9,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -23,6 +28,12 @@ class IAPIntentServiceTest {
 
     @Mock
     private IAPIntentRepository intentRepository;
+
+    @Mock
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Mock
+    private ValueOperations<String, Object> valueOperations;
 
     @InjectMocks
     private IAPIntentService iapIntentService;
@@ -34,6 +45,9 @@ class IAPIntentServiceTest {
     void setUp() {
         userEmail = UserEmail.of("test@example.com");
         productId = ProductId.of("insight_1000_points");
+
+        // RedisTemplate Mock 설정
+        given(redisTemplate.opsForValue()).willReturn(valueOperations);
     }
 
     @Test
@@ -60,6 +74,7 @@ class IAPIntentServiceTest {
         // given
         IAPIntentId intentId = IAPIntentId.generate();
         IAPIntent expectedIntent = IAPIntent.create(userEmail, productId);
+        given(valueOperations.get(anyString())).willReturn(null); // Cache miss
         given(intentRepository.findById(intentId)).willReturn(Optional.of(expectedIntent));
 
         // when
@@ -68,6 +83,7 @@ class IAPIntentServiceTest {
         // then
         assertThat(result).isEqualTo(expectedIntent);
         then(intentRepository).should(times(1)).findById(intentId);
+        then(valueOperations).should(times(1)).set(anyString(), eq(expectedIntent), any(Duration.class));
     }
 
     @Test
@@ -75,6 +91,7 @@ class IAPIntentServiceTest {
     void getIntent_ShouldThrowException_WhenNotFound() {
         // given
         IAPIntentId intentId = IAPIntentId.of("iap_intent_1234567890_abc123");
+        given(valueOperations.get(anyString())).willReturn(null); // Cache miss
         given(intentRepository.findById(intentId)).willReturn(Optional.empty());
 
         // when & then
@@ -102,6 +119,7 @@ class IAPIntentServiceTest {
             pastTime.plusSeconds(3600), // 1시간 전 만료
             null
         );
+        given(valueOperations.get(anyString())).willReturn(null); // Cache miss
         given(intentRepository.findById(intentId)).willReturn(Optional.of(expiredIntent));
 
         // when & then
@@ -118,6 +136,7 @@ class IAPIntentServiceTest {
         IAPIntentId intentId = IAPIntentId.generate();
         IAPIntent verifiedIntent = IAPIntent.create(userEmail, productId);
         verifiedIntent.markAsVerified("txn_123456");
+        given(valueOperations.get(anyString())).willReturn(null); // Cache miss
         given(intentRepository.findById(intentId)).willReturn(Optional.of(verifiedIntent));
 
         // when
@@ -127,5 +146,6 @@ class IAPIntentServiceTest {
         assertThat(result.getStatus()).isEqualTo(IAPIntentStatus.VERIFIED);
         assertThat(result.getTransactionId()).isEqualTo("txn_123456");
         then(intentRepository).should(times(1)).findById(intentId);
+        then(valueOperations).should(times(1)).set(anyString(), eq(verifiedIntent), any(Duration.class));
     }
 }

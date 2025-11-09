@@ -20,10 +20,21 @@ eureka:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
 
+asyncsite:
+  tracing:
+    enabled: true
+    http-enabled: true
+    kafka-enabled: true
+    log-request-response: true
+    packages:
+      - com.asyncsite.iap.gateway
+
 logging:
   level:
     root: INFO
     com.asyncsite.iap.gateway: DEBUG
+    com.asyncsite.tracing.logtrace.SafeJsonLogger: TRACE
+    com.asyncsite.tracing.interceptor.GlobalTraceHandler: DEBUG
   pattern:
     console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
