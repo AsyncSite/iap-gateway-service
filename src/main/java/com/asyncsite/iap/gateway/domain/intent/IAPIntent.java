@@ -116,6 +116,15 @@ public class IAPIntent {
     }
 
     /**
+     * 실패 처리 (에러 메시지만)
+     *
+     * @param errorMessage 에러 메시지
+     */
+    public void markAsFailed(String errorMessage) {
+        markAsFailed("VERIFICATION_FAILED", errorMessage);
+    }
+
+    /**
      * 만료 여부 확인
      *
      * @return 만료되었으면 true

@@ -15,6 +15,15 @@ public interface IAPIntentJpaRepository extends JpaRepository<IAPIntentEntity, L
 
     List<IAPIntentEntity> findByUserEmailOrderByCreatedAtDesc(String userEmail);
 
+    /**
+     * ProductId와 Status로 가장 최근 Intent 조회 (Phase 4 Google Play 알림 처리용)
+     *
+     * @param productId 상품 ID
+     * @param status Intent 상태
+     * @return 가장 최근 Intent
+     */
+    Optional<IAPIntentEntity> findTopByProductIdAndStatusOrderByCreatedAtDesc(String productId, String status);
+
     @Query("SELECT e FROM IAPIntentEntity e " +
            "WHERE e.status = 'PENDING' AND e.expiresAt < :now")
     List<IAPIntentEntity> findExpiredIntents(@Param("now") Instant now);

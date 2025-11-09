@@ -3,6 +3,8 @@ package com.asyncsite.iap.gateway.adapter.out.persistence;
 import com.asyncsite.iap.gateway.application.port.out.IAPIntentRepository;
 import com.asyncsite.iap.gateway.domain.intent.IAPIntent;
 import com.asyncsite.iap.gateway.domain.intent.IAPIntentId;
+import com.asyncsite.iap.gateway.domain.intent.IAPIntentStatus;
+import com.asyncsite.iap.gateway.domain.intent.ProductId;
 import com.asyncsite.iap.gateway.domain.intent.UserEmail;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -38,6 +40,15 @@ public class IAPIntentPersistenceAdapter implements IAPIntentRepository {
             .stream()
             .map(mapper::toDomain)
             .collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<IAPIntent> findTopByProductIdAndStatusOrderByCreatedAtDesc(ProductId productId, IAPIntentStatus status) {
+        return jpaRepository.findTopByProductIdAndStatusOrderByCreatedAtDesc(
+                productId.getValue(),
+                status.name()
+            )
+            .map(mapper::toDomain);
     }
 
     @Override
