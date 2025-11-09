@@ -52,7 +52,10 @@ spring:
       properties:
         spring.json.add.type.headers: false
     admin:
+      # KafkaAdmin이 애플리케이션 시작 시 NewTopic 빈들을 자동으로 생성
       auto-create: true
+      # 토픽이 이미 존재하면 설정 변경하지 않음 (파티션/복제본 수정 방지)
+      fail-fast: false
 
 server:
   port: 6084

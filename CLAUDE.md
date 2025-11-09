@@ -267,9 +267,46 @@ IAP Gateway Service는 Google Cloud IAP (Identity-Aware Proxy)와 통합되어 I
 - **Build Tool**: Gradle 8.12
 - **Database**: MySQL 8.0 (Flyway 마이그레이션)
 - **Cache**: Redis 7
-- **Message Broker**: Apache Kafka
+- **Message Broker**: Apache Kafka (토픽 자동 생성)
 - **Service Discovery**: Netflix Eureka (예정)
 - **Container**: Docker
+
+### Kafka 토픽 자동 생성
+
+**Producer가 토픽 생성의 주체입니다.**
+
+IAP Gateway Service는 애플리케이션 시작 시 자동으로 Kafka 토픽을 생성합니다.
+
+#### 자동 생성되는 토픽
+
+| 토픽명 | 파티션 | 복제본 | Producer | Consumer | 용도 |
+|--------|--------|--------|----------|----------|------|
+| `asyncsite.iap.verification.started` | 3 | 1 | IAP Gateway | Payment Core | IAP 검증 시작 이벤트 |
+| `asyncsite.insight.charged` | 3 | 1 | QueryDaily Mobile | IAP Gateway | 인사이트 충전 성공 |
+| `asyncsite.insight.charge.failed` | 3 | 1 | QueryDaily Mobile | IAP Gateway | 인사이트 충전 실패 (보상 트랜잭션) |
+
+#### 토픽 생성 메커니즘
+
+1. **KafkaTopicConfig**: 토픽 정의 (`@Bean NewTopic`)
+2. **KafkaProducerConfig**: `KafkaAdmin` 빈이 애플리케이션 시작 시 자동 생성
+3. **application.yml**: `spring.kafka.admin.auto-create: true`
+
+#### 로컬/서버 모두 자동 생성 확인 완료 ✅
+
+```bash
+# 토픽 생성 확인
+docker exec asyncsite-kafka kafka-topics --bootstrap-server localhost:9092 --list
+
+# 토픽 상세 정보
+docker exec asyncsite-kafka kafka-topics --bootstrap-server localhost:9092 --describe --topic asyncsite.iap.verification.started
+```
+
+**결과:**
+```
+Topic: asyncsite.iap.verification.started	PartitionCount: 3	ReplicationFactor: 1
+Topic: asyncsite.insight.charged	PartitionCount: 3	ReplicationFactor: 1
+Topic: asyncsite.insight.charge.failed	PartitionCount: 3	ReplicationFactor: 1
+```
 
 ---
 
